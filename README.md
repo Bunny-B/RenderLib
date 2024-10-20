@@ -24,3 +24,15 @@ git config --global --unset http.version
 git config --global --unset http.lowSpeedLimit
 git config --global --unset http.lowSpeedTime
 ```
+### Linking and Including RenderLib in Your Project
+
+1. **Link the RenderLib Library**:  
+   Ensure you link the `RenderLib.lib` and `d3d11.lib` in your project settings. This will allow you to use the rendering functionality provided by RenderLib.
+   `$(DXSDK_DIR)Lib\x64\d3d11.lib`
+2. **Include Headers**:  
+   Add the following headers to your project:
+
+   ```cpp
+   #include "vendor/RenderLib/render.h"
+   #include "vendor/imgui/imgui.h"
+   ```
