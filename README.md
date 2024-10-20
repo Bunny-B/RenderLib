@@ -12,8 +12,7 @@ In PowerShell
 ```bash
  git clone --recurse-submodules https://github.com/Bunny-B/RenderLib.git --depth 1
 ```
-If issue occure 
-
+If an issue occurs during cloning (e.g., connection problems), you can adjust Git settings and try again:
 ```bash
 git config --global http.postBuffer 524288000
 git config --global http.version HTTP/1.1
