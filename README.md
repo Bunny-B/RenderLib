@@ -52,6 +52,7 @@ void renderFunction() {
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nShowCmd) {
     // Create an overlay window using RenderLib, passing in the instance handle, window name, and the render function
     render::createOverlayW(hInstance, L"OverlayWindow", nShowCmd, renderFunction);
+    //render::createWindowW(hInstance, L"GUIPE", nShowCmd, renderFunction);
     return 0;
 }
 ```
