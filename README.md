@@ -43,6 +43,7 @@ git config --global --unset http.lowSpeedTime
 #include "vendor/RenderLib/render.h"
 #include "vendor/imgui/imgui.h"
 
+#define VK_INSERT         0x2D
 // Define a render function that will be called to draw ImGui elements
 void renderFunction() {
     if (render::checkKeyToggle(VK_INSERT)) 
