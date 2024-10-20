@@ -45,6 +45,9 @@ git config --global --unset http.lowSpeedTime
 
 // Define a render function that will be called to draw ImGui elements
 void renderFunction() {
+    if (render::checkKeyToggle(VK_INSERT)) 
+        render::toggleOverlayVisible();
+
     ImGui::Text("hello");
 }
 
