@@ -19,18 +19,15 @@
     <Filter Include="imgui">
       <UniqueIdentifier>{6f2ee185-3fd6-4d17-8115-eecfb4f87572}</UniqueIdentifier>
     </Filter>
+    <Filter Include="imgui\backends">
+      <UniqueIdentifier>{ca02247d-acb1-4c82-bd59-0b5e49ecf230}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vendor\imgui\imconfig.h">
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="vendor\imgui\imgui.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\imgui\imgui_impl_dx11.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\imgui\imgui_impl_win32.h">
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="vendor\imgui\imgui_internal.h">
@@ -48,6 +45,12 @@
     <ClInclude Include="src\render\render.h">
       <Filter>render</Filter>
     </ClInclude>
+    <ClInclude Include="vendor\imgui\backends\imgui_impl_dx11.h">
+      <Filter>imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\imgui\backends\imgui_impl_win32.h">
+      <Filter>imgui\backends</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RenderLib.cpp">
@@ -62,12 +65,6 @@
     <ClCompile Include="vendor\imgui\imgui_draw.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="vendor\imgui\imgui_impl_dx11.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="vendor\imgui\imgui_impl_win32.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
     <ClCompile Include="vendor\imgui\imgui_tables.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
@@ -76,6 +73,12 @@
     </ClCompile>
     <ClCompile Include="src\render\render.cpp">
       <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\imgui\backends\imgui_impl_dx11.cpp">
+      <Filter>imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\imgui\backends\imgui_impl_win32.cpp">
+      <Filter>imgui\backends</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
