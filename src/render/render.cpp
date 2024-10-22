@@ -18,11 +18,6 @@ namespace render {
     static IDXGISwapChain* swap_chain = NULL;
     static ID3D11RenderTargetView* render_target_view = NULL;
     static ID3D11Device* device = NULL;
-    static HANDLE hInstance = NULL;
-
-    void* getWindow() {
-        return window;
-    }
 
     static wchar_t* A_to_W(const char* text) {
         const int w_size = MultiByteToWideChar(CP_ACP, 0, text, -1, NULL, 0);
@@ -326,8 +321,6 @@ namespace render {
     }
 
     static char drawInternal(void* instance, const wchar_t* windowsName, int cmd_show, void(*renderFunction)(),char isOverlay,void* hIcon,void* hIconSm) {
-        hInstance = instance;
-
         WNDCLASSEXW wc = { 0 };
         createWindow((HINSTANCE)instance, &window, &wc, windowsName, isOverlay,(HICON)hIcon, (HICON)hIconSm);
 
