@@ -19,12 +19,51 @@ namespace render {
     static ID3D11RenderTargetView* render_target_view = NULL;
     static ID3D11Device* device = NULL;
 
-    static wchar_t* A_to_W(const char* text) {
+ 
+    wchar_t* A_to_W(const char* text) {
+        if (text == NULL) return NULL;
+
         const int w_size = MultiByteToWideChar(CP_ACP, 0, text, -1, NULL, 0);
+        if (w_size == 0)  return NULL;  // Failed conversion
+
         wchar_t* wString = (wchar_t*)malloc(w_size * sizeof(wchar_t));
         if (wString == NULL) return NULL;
         MultiByteToWideChar(CP_ACP, 0, text, -1, wString, w_size);
         return wString;
+    }
+    //https://stackoverflow.com/questions/3019977/convert-wchar-t-to-char
+    char* W_to_A(const wchar_t* pwchar)
+    {
+        // get the number of characters in the string.
+        int currentCharIndex = 0;
+        char currentChar = pwchar[currentCharIndex];
+
+        while (currentChar != '\0')
+        {
+            currentCharIndex++;
+            currentChar = pwchar[currentCharIndex];
+        }
+
+        const int charCount = currentCharIndex + 1;
+
+        // allocate a new block of memory size char (1 byte) instead of wide char (2 bytes)
+        char* aString = (char*)malloc(sizeof(char) * charCount);
+
+        for (int i = 0; i < charCount; i++)
+        {
+            // convert to char (1 byte)
+            char character = pwchar[i];
+
+            *aString = character;
+
+            aString += sizeof(char);
+
+        }
+        aString += '\0';
+
+        aString -= (sizeof(char) * charCount);
+
+        return aString;
     }
 
     static void InternalIcon(const int size,const int iconType, const wchar_t* pathIcon) {
@@ -123,38 +162,41 @@ namespace render {
     }
 
     LRESULT CALLBACK windowProcedure(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
-
         if (ImGui_ImplWin32_WndProcHandler(window, message, wParam, lParam))
             return true;
 
         switch (message)
         {
         case WM_SIZE:
-            {
-                if (swap_chain != NULL) {
-                    releaseTargetView();
-                    //IMPORTANT PART IT MAKE SO YOUR IMGUI RESIZE WITH HWND
-                    ((IDXGISwapChain*)swap_chain)->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), DXGI_FORMAT_UNKNOWN, 0);             
-                    createRenderTargetView();
+        {
+            if (swap_chain != NULL) {
+                releaseTargetView();
+                HRESULT hr = ((IDXGISwapChain*)swap_chain)->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), DXGI_FORMAT_UNKNOWN, 0);
+                if (FAILED(hr)) {
+                    // Handle error (log, cleanup, etc.)
                 }
-                return 0;
+                createRenderTargetView();
             }
-        case WM_DPICHANGED:
-                {
-                    const RECT* suggested_rect = (RECT*)lParam;
-                    ::SetWindowPos(window, nullptr, suggested_rect->left, suggested_rect->top, suggested_rect->right - suggested_rect->left, suggested_rect->bottom - suggested_rect->top, SWP_NOZORDER | SWP_NOACTIVATE);
-                }
-                break;
-            case WM_DESTROY:
-                ::PostQuitMessage(0);
-                return 0;
-
-            default:
-                break;
+            return 0;
         }
-   
-        return DefWindowProc(window, message, wParam, lParam);
+        case WM_DPICHANGED:
+        {
+            const RECT* suggested_rect = (RECT*)lParam;
+            ::SetWindowPos(window, nullptr, suggested_rect->left, suggested_rect->top,
+                suggested_rect->right - suggested_rect->left,
+                suggested_rect->bottom - suggested_rect->top,
+                SWP_NOZORDER | SWP_NOACTIVATE);
+            return 0; // Add return here for clarity
+        }
+        case WM_DESTROY:
+            ::PostQuitMessage(0);
+            return 0;
+
+        default:
+            return DefWindowProc(window, message, wParam, lParam);
+        }
     }
+
 
     void draw_callback() {
         if (ImGui::BeginTabBar("rabbar")) {
@@ -291,8 +333,19 @@ namespace render {
         }
     }
 
-    static void mainWindow(char isOverlay,void(*renderFunction)()) {
-        //https://github.com/ocornut/imgui/issues/3541
+    static ImGuiWindowFlags currentFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoResize;
+
+    void setWindowFlags(int flags) { currentFlags = flags; }
+    void addWindowFlags(int flags) { currentFlags |= flags; }
+    void removeWindowFlags(int flags) { currentFlags &= ~flags; }
+
+    void ChangeWindowTitleA(const char* newTitle) {
+        SetWindowTextA(window, newTitle);
+    }
+    void ChangeWindowTitleW(const wchar_t* newTitle) {
+        SetWindowTextW(window, newTitle);
+    }
+    static void mainWindow(char isOverlay, void(*renderFunction)()) {
         ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
         ImVec2 displaySize = ImGui::GetIO().DisplaySize;
 
@@ -300,17 +353,18 @@ namespace render {
         ImGui::SetNextWindowSize(displaySize); // Size equal to the display size
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-        ImVec4 bgColor = isOverlay ? ImVec4( 0.f, 0.f, 0.f, 0.f ) : ImVec4( 1.f, 1.f, 1.f, 1.f);
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, bgColor);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, isOverlay ? ImVec4(0.f, 0.f, 0.f, 0.f) : ImVec4(1.f, 1.f, 1.f, 1.f));
         ImGui::PushStyleColor(ImGuiCol_Text, { 0,0,0,255 });
 
-        ImGui::Begin("main window", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoResize);
-        renderFunction();
-        ImGui::End();
+        // Use the flags passed or the currentFlags
+        if (ImGui::Begin("main window", nullptr, currentFlags)) {
+            renderFunction();
+            ImGui::End();
+        }
 
         ImGui::PopStyleVar(1);
         ImGui::PopStyleColor(2);
-    }
+    }   
 
     static void setupImGuiFonts() {
         ImGuiIO& io = ImGui::GetIO();
@@ -342,13 +396,13 @@ namespace render {
 
         setupImGuiFonts();
 
+        
         bool running = true;
         while (running) {
             MSG msg;
-            while (PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE)) {
-                if (ImGui_ImplWin32_WndProcHandler(window, msg.message, msg.wParam, msg.lParam)) {
-                    continue;
-                }
+            
+            
+            while (PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE)) {            
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
 
@@ -356,6 +410,9 @@ namespace render {
                     running = false;
                 }
             }
+            
+            
+            
 
             ImGui_ImplDX11_NewFrame();
             ImGui_ImplWin32_NewFrame();

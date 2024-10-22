@@ -3,10 +3,17 @@
 
 namespace render
 {
-
-	extern void* getWindow();
-
 	extern char checkKeyToggle(int vKey);
+
+	extern void setWindowFlags(int flags);
+
+	extern void addWindowFlags(int flags);
+
+	extern void removeWindowFlags(int flags);
+
+	extern void ChangeWindowTitleW(const wchar_t* newTitle);
+
+	extern void ChangeWindowTitleA(const char* newTitle);
 
 	extern char createWindowW(void* instance,const wchar_t* windowsName, int cmd_show, void(*renderFunction)(), void* hIcon, void* hIconSm);
 
@@ -31,6 +38,11 @@ namespace render
 	extern char setSmallWindowIconW(const wchar_t* pathIcon);
 
 	extern char setSmallWindowIconA(const char* pathIcon);
+
+	extern wchar_t* A_to_W(const char* text);
+
+	extern char* W_to_A(const wchar_t* text);
+
 };
 
 #endif // !RENDER_H
