@@ -44,19 +44,30 @@ git config --global --unset http.lowSpeedTime
 #include "vendor/imgui/imgui.h"
 
 #define VK_INSERT         0x2D
-// Define a render function that will be called to draw ImGui elements
-void renderFunction() {
-    if (render::checkKeyToggle(VK_INSERT)) 
+void draw_callback();
+
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
+                     _In_opt_ HINSTANCE hPrevInstance,
+                     _In_ LPWSTR    lpCmdLine,
+                     _In_ int       nCmdShow)
+{
+    HICON hIcon   = LoadIconW(hInstance, MAKEINTRESOURCE(IDI_BIG));
+    HICON hIconSm = LoadIconW(hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    if (hIcon == NULL || hIconSm == NULL) {
+        MessageBoxW(NULL, L"Failed to load icon.", L"Error", MB_OK | MB_ICONERROR);
+    }
+
+    render::createWindowW(hInstance, L"PEye", nCmdShow, draw_callback, hIcon, hIconSm);
+    //render::createWindowW(hInstance, L"PEye", nCmdShow, draw_callback, NULL, NULL);
+    //render::createOverlayW(hInstance, L"PEye overlay", nShowCmd, renderFunction,NULL,NULL);
+
+
+    return 5;
+}
+
+void draw_callback() {
+    if (render::checkKeyToggle(VK_INSERT))
         render::toggleOverlayVisible();
-
-    ImGui::Text("hello");
 }
 
-//Dont forget to set Windows(/SUBSYSTEM:WINDOWS) 
-int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nShowCmd) {
-    // Create an overlay window using RenderLib, passing in the instance handle, window name, and the render function
-    render::createOverlayW(hInstance, L"OverlayWindow", nShowCmd, renderFunction);
-    //render::createWindowW(hInstance, L"GUIPE", nShowCmd, renderFunction);
-    return 0;
-}
 ```
