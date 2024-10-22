@@ -10,7 +10,6 @@
 
 #include "dwmapi.h"
 
-
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 namespace render {
@@ -19,6 +18,66 @@ namespace render {
     static IDXGISwapChain* swap_chain = NULL;
     static ID3D11RenderTargetView* render_target_view = NULL;
     static ID3D11Device* device = NULL;
+    static HANDLE hInstance = NULL;
+
+    void* getWindow() {
+        return window;
+    }
+
+    static wchar_t* A_to_W(const char* text) {
+        const int w_size = MultiByteToWideChar(CP_ACP, 0, text, -1, NULL, 0);
+        wchar_t* wString = (wchar_t*)malloc(w_size * sizeof(wchar_t));
+        if (wString == NULL) return NULL;
+        MultiByteToWideChar(CP_ACP, 0, text, -1, wString, w_size);
+        return wString;
+    }
+
+    static void InternalIcon(const int size,const int iconType, const wchar_t* pathIcon) {
+        // Load the small icon (16x16)
+        HICON hIcon = (HICON)LoadImageW(
+            nullptr,                 // No module, because we're loading from a file
+            pathIcon,                // Path to your icon file
+            IMAGE_ICON,              // Loading an icon
+            size, size,                  // Desired width and height
+            LR_LOADFROMFILE          // Load the icon from file
+        );
+        // Set the small icon
+        if (hIcon) {
+            SendMessage(window, WM_SETICON, iconType, (LPARAM)hIcon);
+        }
+    }
+
+    extern char setSmallWindowIconW(const wchar_t* pathIcon) {
+        if (window == NULL) return FALSE;
+        InternalIcon(16, ICON_SMALL, pathIcon);
+        return TRUE;
+    }
+
+    extern char setSmallWindowIconA(const char* pathIcon) {
+        wchar_t* wString = NULL;
+        if (wString = A_to_W(pathIcon)) {
+            char res = setSmallWindowIconW(wString);
+            free(wString); wString = NULL;
+            return TRUE;
+        }
+        return FALSE;
+    }
+
+    char setWindowIconW(const wchar_t* pathIcon) {
+        if (window == NULL) return FALSE;
+        InternalIcon(32, ICON_BIG, pathIcon);
+        return TRUE;
+    }
+
+    char setWindowIconA(const char* pathIcon) {
+        wchar_t* wString = A_to_W(pathIcon);
+        if (wString == NULL) return FALSE;
+
+        char res = setWindowIconW(wString);
+
+        free(wString); wString = NULL;
+        return res;
+    }
 
     char checkKeyToggle(int vKey) {
         static bool previousState = false;
@@ -75,7 +134,6 @@ namespace render {
 
         switch (message)
         {
-
         case WM_SIZE:
             {
                 if (swap_chain != NULL) {
@@ -121,15 +179,21 @@ namespace render {
         }
     }
 
-    static char createWindow(HINSTANCE instance,HWND* window, PWNDCLASSEXW wc, LPCWSTR windowsName, char isOverlay) {
+    static char createWindow(HINSTANCE instance,HWND* window, PWNDCLASSEXW wc, LPCWSTR windowsName, char isOverlay, HICON hIcon, HICON hIconSm) {
         SetProcessDPIAware();
-
         wc->cbSize = sizeof(WNDCLASSEXW);
+        if (hIcon != NULL) wc->hIcon = hIcon;
+        if (hIcon != hIconSm) wc->hIconSm = hIconSm;
+
         wc->style = CS_HREDRAW | CS_VREDRAW;
         wc->lpfnWndProc = windowProcedure;
+        wc->cbClsExtra = 0;
+        wc->cbWndExtra = 0;
         wc->hInstance = instance;
         wc->lpszClassName = L" ";
-
+        wc->hCursor = LoadCursor(nullptr, IDC_ARROW);
+        wc->hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    
         // Register the window class
         RegisterClassExW(wc);
         const DWORD dwStyle = isOverlay ? WS_POPUP : WS_OVERLAPPEDWINDOW;
@@ -261,10 +325,11 @@ namespace render {
         ImGui::GetIO().Fonts->Build();
     }
 
-    static char drawInternal(void* instance, const wchar_t* windowsName, int cmd_show, void(*renderFunction)(),char isOverlay) {
+    static char drawInternal(void* instance, const wchar_t* windowsName, int cmd_show, void(*renderFunction)(),char isOverlay,void* hIcon,void* hIconSm) {
+        hInstance = instance;
 
         WNDCLASSEXW wc = { 0 };
-        createWindow((HINSTANCE)instance, &window, &wc, windowsName, isOverlay);
+        createWindow((HINSTANCE)instance, &window, &wc, windowsName, isOverlay,(HICON)hIcon, (HICON)hIconSm);
 
         ShowWindow(window, SW_SHOW);
         UpdateWindow(window);
@@ -338,41 +403,32 @@ namespace render {
         return TRUE;
     }
 
-    char createWindowA(void* instance, const char* windowsName, int cmd_show, void(*renderFunction)()) {
+    char createWindowA(void* instance, const char* windowsName, int cmd_show, void(*renderFunction)(), void* hIcon, void* hIconSm) {
 
-       const int w_size =  MultiByteToWideChar(CP_ACP, 0, windowsName, -1, NULL, 0);
-       wchar_t* wString = (wchar_t*)malloc(w_size * sizeof(wchar_t));
-       if (wString == NULL) return FALSE;
-       MultiByteToWideChar(CP_ACP, 0, windowsName, -1, wString, w_size);
+        wchar_t* wString = A_to_W(windowsName);
+        if (wString == NULL) return FALSE;
+       const char res = createWindowW(instance, wString, cmd_show, renderFunction,(HICON)hIcon, (HICON)hIconSm);
 
-       const char res = createWindowW(instance, wString, cmd_show, renderFunction);
-
-       free(wString);
-       wString = NULL;
-
+       free(wString); wString = NULL;
        return res;
     }
 
-    char createWindowW(void* instance, const wchar_t* windowsName, int cmd_show, void(*renderFunction)()) {
-        return drawInternal(instance, windowsName, cmd_show, renderFunction, FALSE);
+    char createWindowW(void* instance, const wchar_t* windowsName, int cmd_show, void(*renderFunction)(),void* hIcon, void* hIconSm) {
+        return drawInternal(instance, windowsName, cmd_show, renderFunction, FALSE, (HICON)hIcon, (HICON)hIconSm);
     }
 
-    char createOverlayA(void* instance, const char* windowsName, int cmd_show, void(*renderFunction)()) {      
-       const int w_size =  MultiByteToWideChar(CP_ACP, 0, windowsName, -1, NULL, 0);
-       wchar_t* wString = (wchar_t*)malloc(w_size * sizeof(wchar_t));
+    char createOverlayA(void* instance, const char* windowsName, int cmd_show, void(*renderFunction)(), void* hIcon, void* hIconSm) {
+       wchar_t* wString = A_to_W(windowsName);
        if (wString == NULL) return FALSE;
-       MultiByteToWideChar(CP_ACP, 0, windowsName, -1, wString, w_size);
 
-       const char res = createOverlayW(instance, wString, cmd_show, renderFunction);
+       const char res = createOverlayW(instance, wString, cmd_show, renderFunction,(HICON)hIcon, (HICON)hIconSm);
 
-       free(wString);
-       wString = NULL;
-
+       free(wString); wString = NULL;
        return res;
     }
 
-    char createOverlayW(void* instance, const wchar_t* windowsName, int cmd_show, void(*renderFunction)()) {
-       return drawInternal(instance, L"", cmd_show, renderFunction, TRUE);
+    char createOverlayW(void* instance, const wchar_t* windowsName, int cmd_show, void(*renderFunction)(), void* hIcon, void* hIconSm) {
+       return drawInternal(instance, L"", cmd_show, renderFunction, TRUE, (HICON)hIcon, (HICON)hIconSm);
     }
 
     void toggleOverlayVisible() {
